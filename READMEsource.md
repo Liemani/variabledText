@@ -1,13 +1,21 @@
-# variabledText
+project name = variabledText
+first title = File Format
+second title = Feature
+third title = Use
+fourth title = Additional
+coding time = ???
+library = https://github.com/Liemani/cLibrary.git
+
+# \(project name)
 
 ## Index
 
-- File Format
-- Feature
-- Use
-- Additional
+- \(first title)
+- \(second title)
+- \(third title)
+- \(fourth title)
 
-## File Format
+## \(first title)
 
 ```text
 // no empty line
@@ -25,29 +33,29 @@
 
 You can use this program recursively by using the output of this program as input, but not intended behaviour.
 
-## Feature
+## \(second title)
 
 - Default destination file extension is `.lmtdestination`.
 
-## Use
+## \(third title)
 
 ```zsh
 % make
 ...
-% ./variabledText -o README.md READMEsource.md
+% ./\(project name) -o README.md READMEsource.md
 %
 ```
 
-`./variabledText [-o \<destination file\>] \<source file\>`
+`./\(project name) [-o \<destination file\>] \<source file\>`
 
-## Additional
+## \(fourth title)
 
 - I have another work to do, so i made this project ASAP, so codes are not good, if you want to see better code, check `cLibrary` link below, which is used for this project.
 - I want to add some another feature, but not now.
   - Function to replace all a variable name to another name.
   - Support seperation between text file listed variables and text file to apply.
   - Program displaying value of variable at real titme.
-- This README.md is also managed by using variabledText (Created from READMEsource.md)
+- This README.md is also managed by using \(project name) (Created from READMEsource.md)
 
-Time take: ???
-Using library: https://github.com/Liemani/cLibrary.git
+Time take: \(coding time)
+Using library: \(library)

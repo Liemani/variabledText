@@ -1,31 +1,34 @@
 NAME		= variabledText
 CLIBRARYD	= cLibrary
-CLIBRARYF	= $(CLIBRARYD)/libcLibrary.a
+CLIBRARYF	= $(CLIBRARYD)/lib$(CLIBRARYD).a
 
-SRCS		= main.c
+SRCS		= program.c \
+			  get_next_line.c \
+			  get_next_line_utils.c
 OBJS		= $(SRCS:.c=.o)
 
 
 
 CC			= clang
-LIBRARY		= -L $(CLIBRARYD) -l$(patsubst $(CLIBRARYD)/lib%.a,%,$(CLIBRARYF))
-COMPILE		= $(CC) $(LIBRARY)
+INCLUDE		= -I $(CLIBRARYD)
+LIBRARY		= -L $(CLIBRARYD) -l $(CLIBRARYD)
+
+COMPILE		= $(CC) $(INCLUDE)
+LINK		= $(COMPILE) $(LIBRARY)
 
 
 
-.PHONY:		all debug setdebug
-all:		$(NAME)
-debug:		setdebug $(NAME)
+.PHONY:		all debug test setdebug
+all:		$(CLIBRARYF) $(NAME)
+debug:		fclean setdebug $(CLIBRARYF) $(NAME)
 setdebug:
 			$(eval OPTION = -g)
 
-$(NAME):	$(OBJS) $(CLIBRARYF)
-			$(COMPILE) $(OPTION) -o $@ $^
+$(NAME):	$(OBJS)
+			$(LINK) $(OPTION) -o $@ $^
 
 $(CLIBRARYF):
-			if [[ ! -e $(CLIBRARYD) ]]; then
-				git clone https://github.com/Liemani/cLibrary.git
-			fi
+			if [[ ! -e $(CLIBRARYD) ]]; then git clone https://github.com/Liemani/cLibrary.git; fi
 			make -C $(CLIBRARYD)
 
 %.o:		%.c
