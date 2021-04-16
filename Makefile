@@ -40,4 +40,5 @@ clean:
 			make -C $(CLIBRARYD) fclean
 fclean:		clean
 			rm -f $(NAME)
+			rm -rf $(CLIBRARYD)
 re:			fclean all
