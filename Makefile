@@ -16,11 +16,13 @@ LIBRARY		= -L $(CLIBRARYD) -l $(CLIBRARYD)
 COMPILE		= $(CC) $(INCLUDE)
 LINK		= $(COMPILE) $(LIBRARY)
 
+RM			= rm -rf
 
 
-.PHONY:		all debug test setdebug
+
+.PHONY:		all debug setdebug
 all:		$(CLIBRARYF) $(NAME)
-debug:		fclean setdebug $(CLIBRARYF) $(NAME)
+debug:		clean setdebug $(CLIBRARYF) $(NAME)
 setdebug:
 			$(eval OPTION = -g)
 
@@ -36,9 +38,8 @@ $(CLIBRARYF):
 
 .PHONY:		clean fclean re
 clean:
-			rm -f $(OBJS)
-			make -C $(CLIBRARYD) fclean
+			$(RM) $(OBJS)
 fclean:		clean
-			rm -f $(NAME)
-			rm -rf $(CLIBRARYD)
+			$(RM) $(NAME)
+			$(RM) $(CLIBRARYD)
 re:			fclean all

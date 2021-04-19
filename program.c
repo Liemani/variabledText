@@ -8,23 +8,6 @@
 #include "cLibrary.h"
 #include "get_next_line.h"
 
-//	stdio.h
-//		printf()
-//
-//	fcntl.h
-//		open()
-//
-//	string.h
-//		strcmp()
-//
-//	unistd.h
-//		close()
-//		read()
-//		write()
-//
-//	sys/types.h
-//		ssize_t
-
 
 
 #define WRONG_INPUT 			1
@@ -101,139 +84,133 @@ static void		updateVariable(char *line)
 	free(line);
 }
 
-static size_t	predictSize(char *string)
+typedef struct	s_position
 {
-	char	*positionPrevious;
-	char	*positionCurrent;
-	char	ch;
-	size_t	size;
+	char		*save;
+	char		*current;
+	char		*search;
+}				t_position;
 
-	positionPrevious = string;
-	positionCurrent = string;
-	size = 0;
+typedef void	(*workType)(t_position *position, void *memo);
 
-	while ((ch = *positionCurrent))
+static void		stringWork(char *string, void (*work)(t_position *position, void *memo), void *memo)
+{
+	t_position	*position;
+	char		ch;
+
+	lmtAlloc(position);
+	position->save = string;
+	position->current = string;
+	while ((ch = *position->current) != '\0')
 	{
 		if (ch == '\\')
 		{
-			size += positionCurrent - positionPrevious;
-
-			ch = *(++positionCurrent);
+			ch = *(++position->current);
 			switch (ch)
 			{
 				case '(':
-					positionPrevious = ++positionCurrent;
-					positionCurrent = strchr(positionCurrent, ')');
-					if (positionCurrent == NULL)
-						positionCurrent = strchr(positionPrevious, '\0');
-					if (*positionCurrent == '\0')
+					position->search = ++position->current;
+					position->search = strchr(position->search, ')');
+					if (position->search == NULL)
 					{
+						position->search = strchr(position->current, '\0');
 						printf(WRONG_TEXT_FORMAT);
-						size += positionCurrent - positionPrevious + 2;
-
-						return (size + 1);
 					}
-					*positionCurrent = '\0';
-					const t_string *value = dictionarySubscript(dictionary, positionPrevious);
-					if (value != NULL)
-						size += value->length;
-					else
-						printf(WRONG_TEXT_VARIABLE);
-					*positionCurrent = ')';
-					++positionCurrent;
-					positionPrevious = positionCurrent;
+					work(position, memo);
 					break;
 				default:
-					positionPrevious = positionCurrent - 1;
+					++position->current;
 					break;
 			}
 		}
 		else
-			++positionCurrent;
+			++position->current;
 	}
-	size += positionCurrent - positionPrevious;
-
-	return (size + 1);
+	position->search = position->current;
+	work(position, memo);
 }
 
-static void		applyVariable(char *line)
+static void		predictLengthWork(t_position *position, size_t *length)
 {
-	char	*positionPrevious;
-	char	*positionCurrent;
-	char	ch;
-	char	*stringToPrint;
-	char	*ptr;
-
-	positionPrevious = line;
-	positionCurrent = line;
-	const size_t sizeToPrint = predictSize(line);
-	_lmtAlloc((void **)&stringToPrint, sizeToPrint);
-	ptr = stringToPrint;
-
-	while ((ch = *positionCurrent))
+	if (*position->search == '\0')
 	{
-		if (ch == '\\')
-		{
-			const size_t currentSize = positionCurrent - positionPrevious;
-			memcpy(ptr, positionPrevious, currentSize);
-			ptr += currentSize;
-
-			ch = *(++positionCurrent);
-			switch (ch)
-			{
-				case '(':
-					positionPrevious = ++positionCurrent;
-					positionCurrent = strchr(positionCurrent, ')');
-					if (positionCurrent == NULL)
-						positionCurrent = strchr(positionPrevious, '\0');
-					if (*positionCurrent == '\0')
-					{
-						positionPrevious = positionPrevious - 2;
-						break;
-					}
-					*positionCurrent = '\0';
-					const t_string *value = dictionarySubscript(dictionary, positionPrevious);
-					if (value != NULL)
-					{
-						memcpy(ptr, value->value, value->length);
-						ptr += value->length;
-					}
-					*positionCurrent = ')';
-					++positionCurrent;
-					positionPrevious = positionCurrent;
-					break;
-				default:
-					positionPrevious = positionCurrent - 1;
-					break;
-			}
-		}
-		else
-			++positionCurrent;
+		*length += position->search - position->save;
+		return ;
 	}
-	const size_t currentSize = positionCurrent - positionPrevious;
-	memcpy(ptr, positionPrevious, currentSize);
-	ptr[currentSize] = '\n';
 
-	ssize_t	result = write(g_output_fd, stringToPrint, sizeToPrint);
-	if (result < 0)
-		printf(FAIL_WRITE);
-	free(stringToPrint);
-	free(line);
+	*length += position->current - position->save - 2;
+	*position->search = '\0';
+	const t_string *value = dictionarySubscript(dictionary, position->current);
+	*position->search = ')';
+	if (value != NULL)
+		*length += value->length;
+	else
+		printf(WRONG_TEXT_VARIABLE);
+	position->current = position->search + 1;
+	position->save = position->current;
+}
+
+static void		applyVariableWork(t_position *position, char **pointer)
+{
+	if (*position->search == '\0')
+	{
+		const size_t length = position->search - position->save;
+		memcpy(*pointer, position->save, length);
+		(*pointer)[length] = '\n';
+		return ;
+	}
+
+	const size_t length = position->current - position->save - 2;
+	memcpy(*pointer, position->save, length);
+	*pointer += length;
+	*position->search = '\0';
+	const t_string *value = dictionarySubscript(dictionary, position->current);
+	*position->search = ')';
+	if (value != NULL)
+	{
+		memcpy(*pointer, value->value, value->length);
+		*pointer += value->length;
+	}
+	else
+		printf(WRONG_TEXT_VARIABLE);
+	position->current = position->search + 1;
+	position->save = position->current;
 }
 
 static void		process()
 {
 	char	*line;
 	int		return_value;
+	size_t	length;
+	char	*stringToPrint;
+	char	*pointer;
 
 	dictionary = Dictionary->new();
 
 	while (0 < (return_value = get_next_line(g_input_fd, &line))
-			&& strcmp(line, ""))
+			&& strcmp(line, "") != 0)
+	{
 		updateVariable(line);
+		line = NULL;
+	}
+
+	if (line != NULL)
+		free(line);
 
 	while (0 < (return_value = get_next_line(g_input_fd, &line)))
-		applyVariable(line);
+	{
+		length = 0;
+		stringWork(line, (workType)predictLengthWork, &length);
+		const size_t size = length + 1;
+		_lmtAlloc((void **)&stringToPrint, size);
+		pointer = stringToPrint;
+		stringWork(line, (workType)applyVariableWork, &pointer);
+		free(line);
+		const ssize_t result = write(g_output_fd, stringToPrint, size);
+		if (result < 0)
+			printf(FAIL_WRITE);
+		free(stringToPrint);
+	}
 }
 
 static char		*getDefaultOutputName(char *inputName)
@@ -300,7 +277,7 @@ static int		readArgument(int argc, char **argv)
 	return (0);
 }
 
-int				program(int argc, char **argv)
+int				variabledText(int argc, char **argv)
 {
 	int	result_value;
 
@@ -315,10 +292,9 @@ int				program(int argc, char **argv)
 			printf("Failed opening file \n");
 			break;
 		default:
+			process();
 			break;
 	}
-
-	process();
 
 	if (0 < g_input_fd)
 	{
@@ -332,4 +308,9 @@ int				program(int argc, char **argv)
 	}
 
 	return (0);
+}
+
+int				program(int argc, char **argv)
+{
+	return (variabledText(argc, argv));
 }
