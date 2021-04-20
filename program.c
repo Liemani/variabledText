@@ -10,18 +10,15 @@
 
 
 
-#define WRONG_INPUT 			1
-#define FAIL_OPEN				2
+#define WRONG_INPUT 			-1
+#define FAIL_OPEN				-2
 
 #define OUTPUT_EXTENSION		".lmtdestination"
-
-#ifndef	READ_BUFFER_SIZE
-#define READ_BUFFER_SIZE		128
-#endif
+#define IMPORT					"\\import"
 
 #define WRONG_VARIABLE_FORMAT	"Wrong variable format detected! \n"
 #define WRONG_TEXT_FORMAT		"Wrong text format detected! \n"
-#define WRONG_TEXT_VARIABLE		"Wrong text variabled detected! \n"
+#define WRONG_TEXT_VARIABLE		"Wrong variabled text detected! \n"
 #define FAIL_WRITE				"Failed writing to file! \n"
 
 
@@ -33,29 +30,48 @@ t_dictionary	*dictionary;
 
 
 
+static void		process(int fdInput, int fdOutput);
+
 static void		updateVariable(char *line)
 {
-	char	*keyStart = line;
-	char	*keyEnd = strchr(line, '=');
+	while (isspace(*line))
+		++line;
 
-	if (keyEnd == NULL)
+	if (strncmp(line, IMPORT, strlen(IMPORT)) == 0)
 	{
-		printf(WRONG_VARIABLE_FORMAT);
-		free(line);
-		return ;
+		line += strlen(IMPORT);
+		while (isspace(*line))
+			++line;
+		if (*line != '\0')
+		{
+			char *pointer = line;
+			pointer = strchr(pointer, '\0');
+			while (isspace(*(pointer - 1)))
+				--pointer;
+			*pointer = '\0';
+			const int variableFile = open(line, O_RDONLY);
+			process(variableFile, g_output_fd);
+			return ;
+		}
 	}
 
-	char	*valueStart = keyEnd + 1;
-	char	*valueEnd = strchr(valueStart, '\0');
-
-	while (isspace(*keyStart))
-		++keyStart;
+	char *keyStart = line;
 	if (*keyStart == '=' || *keyStart == '\0')
 	{
 		printf(WRONG_VARIABLE_FORMAT);
-		free(line);
 		return ;
 	}
+
+	char *keyEnd = strchr(keyStart, '=');
+	if (keyEnd == NULL)
+	{
+		printf(WRONG_VARIABLE_FORMAT);
+		return ;
+	}
+
+	char *valueStart = keyEnd + 1;
+	char *valueEnd = strchr(valueStart, '\0');
+
 	--keyEnd;
 	while (isspace(*keyEnd))
 		--keyEnd;
@@ -63,7 +79,6 @@ static void		updateVariable(char *line)
 	if (strchr(keyStart, ')') != NULL)
 	{
 		printf(WRONG_VARIABLE_FORMAT);
-		free(line);
 		return ;
 	}
 	t_string *key = initString(keyStart);
@@ -80,8 +95,6 @@ static void		updateVariable(char *line)
 	t_string *value = initString(valueStart);
 
 	dictionaryUpdate(dictionary, key, value);
-
-	free(line);
 }
 
 typedef struct	s_position
@@ -177,7 +190,7 @@ static void		applyVariableWork(t_position *position, char **pointer)
 	position->save = position->current;
 }
 
-static void		process()
+static void		process(int fdInput, int fdOutput)
 {
 	char	*line;
 	int		return_value;
@@ -185,19 +198,18 @@ static void		process()
 	char	*stringToPrint;
 	char	*pointer;
 
-	dictionary = Dictionary->new();
-
-	while (0 < (return_value = get_next_line(g_input_fd, &line))
+	while (0 < (return_value = get_next_line(fdInput, &line))
 			&& strcmp(line, "") != 0)
 	{
 		updateVariable(line);
+		free(line);
 		line = NULL;
 	}
 
 	if (line != NULL)
 		free(line);
 
-	while (0 < (return_value = get_next_line(g_input_fd, &line)))
+	while (0 < (return_value = get_next_line(fdInput, &line)))
 	{
 		length = 0;
 		stringWork(line, (workType)predictLengthWork, &length);
@@ -206,7 +218,7 @@ static void		process()
 		pointer = stringToPrint;
 		stringWork(line, (workType)applyVariableWork, &pointer);
 		free(line);
-		const ssize_t result = write(g_output_fd, stringToPrint, size);
+		const ssize_t result = write(fdOutput, stringToPrint, size);
 		if (result < 0)
 			printf(FAIL_WRITE);
 		free(stringToPrint);
@@ -292,7 +304,8 @@ int				variabledText(int argc, char **argv)
 			printf("Failed opening file \n");
 			break;
 		default:
-			process();
+			dictionary = Dictionary->new();
+			process(g_input_fd, g_output_fd);
 			break;
 	}
 

@@ -1,9 +1,5 @@
-project name = variabledText
-first title = File Format
-second title = Feature
-third title = Use
-fourth title = Additional
-library = https://github.com/Liemani/cLibrary.git
+\import README.variable
+\import index.variable
 
 # \(project name)
 
@@ -18,6 +14,7 @@ library = https://github.com/Liemani/cLibrary.git
 
 ```text
 // no empty line
+\import <file name to import>
 <variable identifier> = <value>
 <variable identifier> = <value>
 ...
@@ -25,6 +22,7 @@ library = https://github.com/Liemani/cLibrary.git
 <text>
 ```
 
+- You can read variable from other files.
 - `<variable identifier>` can't have ')' character.
 - Between variable part and text part, exist only one empty line.
 

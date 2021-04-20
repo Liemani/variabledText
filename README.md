@@ -11,6 +11,7 @@
 
 ```text
 // no empty line
+\import <file name to import>
 <variable identifier> = <value>
 <variable identifier> = <value>
 ...
@@ -18,6 +19,7 @@
 <text>
 ```
 
+- You can read variable from other files.
 - `<variable identifier>` can't have ')' character.
 - Between variable part and text part, exist only one empty line.
 
