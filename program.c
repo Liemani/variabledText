@@ -20,7 +20,7 @@
 #define WRONG_TEXT_FORMAT		"Wrong text format detected! \n"
 #define WRONG_TEXT_VARIABLE		"Wrong variabled text detected! \n"
 #define FAIL_WRITE				"Failed writing to file! \n"
-
+#define FAIL_OPEN_MESSAGE		"Failed opening file \n"
 
 
 int				g_input_fd;
@@ -50,7 +50,13 @@ static void		updateVariable(char *line)
 				--pointer;
 			*pointer = '\0';
 			const int variableFile = open(line, O_RDONLY);
+			if (variableFile < 0)
+			{
+				printf(FAIL_OPEN_MESSAGE);
+				return ;
+			}
 			process(variableFile, g_output_fd);
+			close(variableFile);
 			return ;
 		}
 	}
@@ -301,7 +307,7 @@ int				variabledText(int argc, char **argv)
 			printf("variabledText [-o <target_file>] <source_file> \n");
 			break;
 		case FAIL_OPEN:
-			printf("Failed opening file \n");
+			printf(FAIL_OPEN_MESSAGE);
 			break;
 		default:
 			dictionary = Dictionary->new();
