@@ -1,4 +1,4 @@
-NAME		= variabledText
+NAME		= variabledText.out
 CLIBRARYD	= cLibrary
 CLIBRARYF	= $(CLIBRARYD)/lib$(CLIBRARYD).a
 
